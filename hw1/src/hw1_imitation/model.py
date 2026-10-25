@@ -46,13 +46,28 @@ class MSEPolicy(BasePolicy):
         hidden_dims: tuple[int, ...] = (128, 128),
     ) -> None:
         super().__init__(state_dim, action_dim, chunk_size)
+    ############################################################################################
+        sizes = [state_dim, *hidden_dims, chunk_size * action_dim] #[입력, *, 출력]
+        items = []
+        for a, b in zip(sizes[:-1], sizes[1:]):
+            items.append(nn.Linear(a, b))
+            items.append(nn.ReLU())
+        self.net = nn.Sequential(*items[:-1])  # 마지막 ReLU 제거
+    ############################################################################################
 
     def compute_loss(
         self,
         state: torch.Tensor,
         action_chunk: torch.Tensor,
     ) -> torch.Tensor:
-        raise NotImplementedError
+        # raise NotImplementedError
+    ############################################################################################
+        action_chunk_pred = self.net(state).reshape(-1, self.chunk_size, self.action_dim)       # (batch, chunk_size, action_dim)
+        loss = nn.MSELoss(reduction='none')(action_chunk_pred, action_chunk).sum(dim=(1, 2)).mean()   # HW1 식(1).
+                                                                            # reduction='none': 평균내지 않고 원소별 제곱 오차
+                                                                            # (batch, chunk_size, action_dim) -> (batch,)
+        return loss
+    ############################################################################################
 
     def sample_actions(
         self,
@@ -60,8 +75,12 @@ class MSEPolicy(BasePolicy):
         *,
         num_steps: int = 10,
     ) -> torch.Tensor:
-        raise NotImplementedError
-
+        # raise NotImplementedError
+    ############################################################################################
+        with torch.no_grad():
+            action_chunk_pred = self.net(state).reshape(-1, self.chunk_size, self.action_dim)   # (batch, chunk_size, action_dim)
+        return action_chunk_pred
+    ############################################################################################
 
 class FlowMatchingPolicy(BasePolicy):
     """Predicts action chunks with a flow matching loss."""
@@ -75,6 +94,9 @@ class FlowMatchingPolicy(BasePolicy):
         hidden_dims: tuple[int, ...] = (128, 128),
     ) -> None:
         super().__init__(state_dim, action_dim, chunk_size)
+    ############################################################################################
+
+    ############################################################################################
 
     def compute_loss(
         self,
@@ -82,6 +104,9 @@ class FlowMatchingPolicy(BasePolicy):
         action_chunk: torch.Tensor,
     ) -> torch.Tensor:
         raise NotImplementedError
+    ############################################################################################
+
+    ############################################################################################
 
     def sample_actions(
         self,
@@ -90,6 +115,9 @@ class FlowMatchingPolicy(BasePolicy):
         num_steps: int = 10,
     ) -> torch.Tensor:
         raise NotImplementedError
+    ############################################################################################
+
+    ############################################################################################
 
 
 PolicyType: TypeAlias = Literal["mse", "flow"]
