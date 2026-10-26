@@ -20,7 +20,7 @@ from hw1_imitation.data import (
     load_pusht_zarr,
 )
 from hw1_imitation.model import build_policy, PolicyType
-from hw1_imitation.evaluation import Logger, evaluate_policy
+from hw1_imitation.evaluation import Logger
 
 LOGDIR_PREFIX = "exp"
 
@@ -103,6 +103,7 @@ def run_training(config: TrainConfig) -> None:
         normalizer=normalizer,
     )
 
+    # 배치를 꺼내는 DataLoader.
     loader = DataLoader(
         dataset,
         batch_size=config.batch_size,
@@ -127,51 +128,57 @@ def run_training(config: TrainConfig) -> None:
     )
     logger = Logger(log_dir)
 
-    optimizer = torch.optim.AdamW(
-        model.parameters(), lr=config.lr, weight_decay=config.weight_decay
+    ### TODO: PUT YOUR MAIN TRAINING LOOP HERE ###
+    # Note that, for grading purposes, you must call the evaluate_policy function periodically in your
+    # training loop, and call logger.dump_for_grading() at the end of training.
+    ####################################################################################
+    from hw1_imitation.evaluation import evaluate_policy
+
+    # Optimizer 정의.
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=config.lr,
+        weight_decay=config.weight_decay,
     )
-    global_step = 0
-    logged_loss = 0.0
-    logged_steps = 0
+    model.optimizer = optimizer
+    
+    step = 0
+    
+    for epoch in range(config.num_epochs):
+        
+        for state, action_chunk in loader:   # epoch 내에서 배치 단위로 데이터를 가져옴. 평가 주기와 로그 주기를 고려하여 step(배치) 단위로 진행
+            state = state.to(device)
+            action_chunk = action_chunk.to(device)
 
-    model.train()
-    for _epoch in range(config.num_epochs):
-        for state, action_chunk in loader:
-            state = state.to(device, non_blocking=True)
-            action_chunk = action_chunk.to(device, non_blocking=True)
+            loss = model.compute_loss(state, action_chunk)  # 
 
-            optimizer.zero_grad(set_to_none=True)
-            loss = model.compute_loss(state, action_chunk)
-            loss.backward()
-            optimizer.step()
+            # Backpropagation
+            model.optimizer.zero_grad() # gradient 0으로 초기화
+            loss.backward()             # backpropagation으로 gradient 계산
+            model.optimizer.step()      # gradient 업데이트
 
-            global_step += 1
-            logged_loss += loss.detach().item()
-            logged_steps += 1
+            step += 1
 
-            if config.log_interval > 0 and global_step % config.log_interval == 0:
-                logger.log(
-                    {"train/loss": logged_loss / logged_steps}, step=global_step
-                )
-                logged_loss = 0.0
-                logged_steps = 0
+            # 로그(log training metrics) 주기마다 loss, epoch, step을 wandb에 기록
+            if step % config.log_interval == 0: 
+                logger.log({"loss": loss.item(), "epoch": epoch}, step) # loss.item()은 loss tensor에서 scalar 값만 추출
+                                                                                # tensor를 그대로 logger 안의 리스트에 쌓이면 메모리 문제 발생 가능성
 
-            if config.eval_interval > 0 and global_step % config.eval_interval == 0:
+            # 평가 주기마다 정책 평가
+            if step % config.eval_interval == 0: 
                 evaluate_policy(
-                    model=model,
-                    normalizer=normalizer,
-                    device=device,
+                    model,
+                    normalizer,
+                    device,
                     chunk_size=config.chunk_size,
                     video_size=config.video_size,
                     num_video_episodes=config.num_video_episodes,
                     flow_num_steps=config.flow_num_steps,
-                    step=global_step,
+                    step=step,
                     logger=logger,
                 )
-                model.train()
-
-    if logged_steps:
-        logger.log({"train/loss": logged_loss / logged_steps}, step=global_step)
+                model.train()  # 평가 후 다시 학습 모드로 전환
+    ####################################################################################
 
     logger.dump_for_grading()
 
