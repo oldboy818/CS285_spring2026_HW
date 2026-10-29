@@ -95,17 +95,39 @@ class FlowMatchingPolicy(BasePolicy):
     ) -> None:
         super().__init__(state_dim, action_dim, chunk_size)
     ############################################################################################
-
+        # 입력: [state, action_chunk_interpolation, tau]
+        # 출력: vector field v
+        in_dim = state_dim + chunk_size * action_dim + 1        # (batch, state_dim + chunk_size * action_dim + 1)
+        sizes = [in_dim, *hidden_dims, chunk_size * action_dim] # [입력, *, 출력]
+        items = []
+        for a, b in zip(sizes[:-1], sizes[1:]):
+            items.append(nn.Linear(a, b))
+            items.append(nn.ReLU())
+        self.net = nn.Sequential(*items[:-1])  # 마지막 ReLU 제거
     ############################################################################################
 
     def compute_loss(
         self,
-        state: torch.Tensor,
-        action_chunk: torch.Tensor,
+        state: torch.Tensor,        # (batch, state_dim)
+        action_chunk: torch.Tensor, # A_t, 정답. (batch, chunk_size, action_dim)
     ) -> torch.Tensor:
-        raise NotImplementedError
+        # raise NotImplementedError
     ############################################################################################
+        # define interpolation. A_tau = tau * A_t + (1 - tau) * A_0
+        action_chunk_noise = torch.randn_like(action_chunk)         # (batch, chunk_size, action_dim)
+        tau = torch.rand(state.shape[0], 1, 1, device=state.device) # (batch, 1, 1)
+        action_chunk_tau = tau * action_chunk + (1 - tau) * action_chunk_noise    # (batch, chunk_size, action_dim)
+        
+        # define vector field. v(state, A_tau, tau)
+        x = torch.cat([state, action_chunk_tau.flatten(1), tau.flatten(1)], dim=1)      # (batch, state_dim + chunk flatten + 1)
+                                                                                        # 차원 수 맞추기 위해 flatten. 신경망은 하나의 벡터 (batch, ~)를 입력으로
+        vector_field_pred = self.net(x).reshape(-1, self.chunk_size, self.action_dim)   # (batch, chunk_size, action_dim)
 
+        # loss
+        target = action_chunk - action_chunk_noise  # (batch, chunk_size, action_dim)
+        loss = nn.MSELoss(reduction='none')(vector_field_pred, target).sum(dim=(1, 2)).mean()
+
+        return loss
     ############################################################################################
 
     def sample_actions(
@@ -114,9 +136,23 @@ class FlowMatchingPolicy(BasePolicy):
         *,
         num_steps: int = 10,
     ) -> torch.Tensor:
-        raise NotImplementedError
+        # raise NotImplementedError
     ############################################################################################
+        # Euler integration. A_{τ + 1/n} = A_τ + (1/n)·v_θ(o, A_τ, τ)
+        with torch.no_grad():
+            action_chunk = torch.randn(state.shape[0], self.chunk_size, self.action_dim, device=state.device)
+                                                                    # (batch, chunk_size, action_dim)
+            # denoising steps
+            n = 1.0 / num_steps
 
+            for step in range(num_steps):
+                tau = torch.full((state.shape[0], 1, 1), step * n, device=state.device)
+                                            # denoising step에 따라 tau를 0에서 1로 변하는 값으로
+                                            # shape (batch, 1, 1)
+                x = torch.cat([state, action_chunk.flatten(1), tau.flatten(1)], dim=1)
+                action_chunk = action_chunk + n * self.net(x).reshape(-1, self.chunk_size, self.action_dim)
+
+        return action_chunk
     ############################################################################################
 
 

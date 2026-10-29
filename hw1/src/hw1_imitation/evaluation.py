@@ -185,7 +185,8 @@ def evaluate_policy(
                         .cpu()
                         .numpy()[0]
                     )
-                action_chunk = normalizer.denormalize_action(pred_chunk)
+                action_chunk = normalizer.denormalize_action(pred_chunk)    # denormalize하는 이유는 env.step()에 넣어주기 위해서. 
+                                                                            # env.step()은 denormalized된 action을 받음
                 action_chunk = np.clip(action_chunk, action_low, action_high)
                 chunk_index = 0
 

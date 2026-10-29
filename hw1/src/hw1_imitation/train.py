@@ -91,6 +91,7 @@ def run_training(config: TrainConfig) -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
+    # 학습 데이터셋 다운로드 및 로드
     zarr_path = download_pusht(config.data_dir)
     states, actions, episode_ends = load_pusht_zarr(zarr_path)
     normalizer = Normalizer.from_data(states, actions)
