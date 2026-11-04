@@ -114,9 +114,9 @@ class FlowMatchingPolicy(BasePolicy):
         # raise NotImplementedError
     ############################################################################################
         # define interpolation. A_tau = tau * A_t + (1 - tau) * A_0
-        action_chunk_noise = torch.randn_like(action_chunk)         # (batch, chunk_size, action_dim)
+        action_chunk_noise = torch.randn_like(action_chunk)         # A_0 / (batch, chunk_size, action_dim)
         tau = torch.rand(state.shape[0], 1, 1, device=state.device) # (batch, 1, 1)
-        action_chunk_tau = tau * action_chunk + (1 - tau) * action_chunk_noise    # (batch, chunk_size, action_dim)
+        action_chunk_tau = tau * action_chunk + (1 - tau) * action_chunk_noise    # A_tau = tau * A_t + (1 - tau) * A_0 / (batch, chunk_size, action_dim)
         
         # define vector field. v(state, A_tau, tau)
         x = torch.cat([state, action_chunk_tau.flatten(1), tau.flatten(1)], dim=1)      # (batch, state_dim + chunk flatten + 1)
@@ -124,7 +124,7 @@ class FlowMatchingPolicy(BasePolicy):
         vector_field_pred = self.net(x).reshape(-1, self.chunk_size, self.action_dim)   # (batch, chunk_size, action_dim)
 
         # loss
-        target = action_chunk - action_chunk_noise  # (batch, chunk_size, action_dim)
+        target = action_chunk - action_chunk_noise  # (batch, chunk_size, action_dim)   # A_1 - A_0
         loss = nn.MSELoss(reduction='none')(vector_field_pred, target).sum(dim=(1, 2)).mean()
 
         return loss
