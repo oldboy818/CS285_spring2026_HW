@@ -7,7 +7,7 @@ Each homework folder has its own report with learning curves, analysis, and the 
 | # | Topic | Status | Highlights | Report |
 |---|---|---|---|---|
 | HW1 | Imitation Learning | ✅ Done | MSE policy, flow-matching policy | [hw1/](hw1/) |
-| HW2 | Policy Gradients | ✅ Done | REINFORCE, reward-to-go, NN baseline, GAE; InvertedPendulum solved in 47.8K env steps (default ~300K) | [hw2/REPORT.md](hw2/REPORT.md) |
+| HW2 | Policy Gradients | ✅ Done | REINFORCE, reward-to-go, NN baseline, GAE; InvertedPendulum solved in 47.8K env steps (default ~300K) | [hw2/](hw2/) |
 | HW3 | — | ⬜ Not started | | |
 | HW4 | — | ⬜ Not started | | |
 | HW5 | — | ⬜ Not started | | |
