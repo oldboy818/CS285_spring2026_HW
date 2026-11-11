@@ -54,9 +54,9 @@ An action taken at time t cannot change rewards that were already received, yet 
 
 
 The policy gradient uses $`\log \pi_\theta(a_t \mid s_t)`$ as the score function.
-$$
-`\nabla_\theta J(\theta) \approx \frac{1}{N}\sum_{i}\sum_{t} \nabla_\theta \log \pi_\theta(a_t^i \mid s_t^i)\, A_t^i`
-$$
+```math
+\nabla_\theta J(\theta) \approx \frac{1}{N}\sum_{i}\sum_{t} \nabla_\theta \log \pi_\theta(a_t^i \mid s_t^i)\, A_t^i
+```
 
 $`\pi_\theta(a_t \mid s_t)`$
 
