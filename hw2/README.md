@@ -52,6 +52,15 @@ Without advantage normalization, the reward-to-go estimator clearly outperformed
 
 An action taken at time t cannot change rewards that were already received, yet the trajectory-centric estimator multiplies every `∇log π(a_t|s_t)` by the full return, past rewards included. In expectation those past-reward terms contribute zero gradient, but in any finite batch they add noise. Reward-to-go removes them, so the estimator stays unbiased and its variance drops. The faster, steadier curves are that variance reduction showing up in practice.
 
+
+The policy gradient uses $\log \pi_\theta(a_t \mid s_t)$ as the score function.
+$$
+\nabla_\theta J(\theta) \approx \frac{1}{N}\sum_{i}\sum_{t} \nabla_\theta \log \pi_\theta(a_t^i \mid s_t^i)\, A_t^i
+$$
+
+$`\pi_\theta(a_t \mid s_t)`$
+
+
 #### Advantage normalization
 
 Normalization helped substantially, most of all for the trajectory-centric estimator: its last-10 mean jumped from 105 to 200 with small batches and from 86 to 200 with large batches. The reason is specific to CartPole's reward structure. Every reward is +1, so raw returns are always positive, and every update raises the probability of every sampled action. Only the relative sizes of the updates differ. Normalizing centers the advantages around zero, so actions from shorter-than-average episodes receive negative advantages and are actively discouraged. When reward-to-go was already in use, normalization added less. In the small-batch rtg+na run, the policy reached 200 but oscillated afterwards; I attribute this mostly to single-seed noise rather than to normalization hurting.
