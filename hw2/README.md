@@ -53,10 +53,10 @@ Without advantage normalization, the reward-to-go estimator clearly outperformed
 An action taken at time t cannot change rewards that were already received, yet the trajectory-centric estimator multiplies every `∇log π(a_t|s_t)` by the full return, past rewards included. In expectation those past-reward terms contribute zero gradient, but in any finite batch they add noise. Reward-to-go removes them, so the estimator stays unbiased and its variance drops. The faster, steadier curves are that variance reduction showing up in practice.
 
 
-The policy gradient uses $\log \pi_\theta(a_t \mid s_t)$ as the score function.
-$$
+The policy gradient uses $`\log \pi_\theta(a_t \mid s_t)`$ as the score function.
+$$`
 \nabla_\theta J(\theta) \approx \frac{1}{N}\sum_{i}\sum_{t} \nabla_\theta \log \pi_\theta(a_t^i \mid s_t^i)\, A_t^i
-$$
+`$$
 
 $`\pi_\theta(a_t \mid s_t)`$
 
