@@ -50,7 +50,7 @@ Without advantage normalization, the reward-to-go estimator clearly outperformed
 
 #### Why reward-to-go is preferred
 
-An action taken at time t cannot change rewards that were already received, yet the trajectory-centric estimator multiplies every $`∇log π(a_t|s_t)`$ by the full return, past rewards included. In expectation those past-reward terms contribute zero gradient, but in any finite batch they add noise. Reward-to-go removes them, so the estimator stays unbiased and its variance drops. The faster, steadier curves are that variance reduction showing up in practice.
+An action taken at time t cannot change rewards that were already received, yet the trajectory-centric estimator multiplies every $`\nabla_\theta \log(\pi(a_t \mid s_t)`$ by the full return, past rewards included. In expectation those past-reward terms contribute zero gradient, but in any finite batch they add noise. Reward-to-go removes them, so the estimator stays unbiased and its variance drops. The faster, steadier curves are that variance reduction showing up in practice.
 
 #### Advantage normalization
 
