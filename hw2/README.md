@@ -61,6 +61,9 @@ The policy gradient uses $`\log \pi_\theta(a_t \mid s_t)`$ as the score function
 $`\pi_\theta(a_t \mid s_t)`$
 
 
+`\log \pi_\theta(a_t \mid s_t)`
+
+
 #### Advantage normalization
 
 Normalization helped substantially, most of all for the trajectory-centric estimator: its last-10 mean jumped from 105 to 200 with small batches and from 86 to 200 with large batches. The reason is specific to CartPole's reward structure. Every reward is +1, so raw returns are always positive, and every update raises the probability of every sampled action. Only the relative sizes of the updates differ. Normalizing centers the advantages around zero, so actions from shorter-than-average episodes receive negative advantages and are actively discouraged. When reward-to-go was already in use, normalization added less. In the small-batch rtg+na run, the policy reached 200 but oscillated afterwards; I attribute this mostly to single-seed noise rather than to normalization hurting.
